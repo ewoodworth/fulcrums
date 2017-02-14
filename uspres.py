@@ -14,20 +14,22 @@ STATES = [alabama, alaska, arizona, arkansas, california, colorado, connecticut,
 
     state_page = requests.get('http://www.nytimes.com/elections/results/' + state)
     state_tree = html.fromstring(state_page.content)
-#Take a race
-#gather data for each state
-#senate:
-def scrape_senate_races():
-    for state in STATES:
-        senate.scrape_state_overview(state)
-        senate.scrape_regional_details(state)
-    state_overview = json.dumps()
-    regional_details = json
 
+def scrape_senate_races():
+
+    senate_state_overviews = {}
+    senate_regional_details = {}
+
+    for state in STATES:
+        senate_state_overviews[state] = senate.scrape_state_overview(state)
+        senate_regional_details[state] = senate.scrape_regional_details(state)
+
+    state_overviews = json.dumps(senate_state_overviews)
     text_file = open('senate_state_overview.txt', 'w')
-    text_file.write(file to be writtem)
+    text_file.write(state_overviews)
     text_file.close()
 
+    regional_details = json.dumps(senate_regional_details)
     text_file = open('senate_regional_details.txt', 'w')
-    text_file.write(file to be writtem)
+    text_file.write(regional_details)
     text_file.close()

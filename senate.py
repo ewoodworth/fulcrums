@@ -30,15 +30,18 @@ def scrape_state_overview(state):
     Asterisk after candidate name indicates an incumbant.'''
 
     tree = get_tree(state)
-    race_results_state = {}
     race_header = ['~Candidate~', '~Party~', '~Votes~', '~Percent~']
-    race_results_state[state] = [race_header]
-    for row in input_rows:
-        candidate = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[1]/div/table/tbody/tr[' + row + ']/td[1]/span/span[4]')
-        party = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[1]/div/table/tbody/tr[' + row + ']/td[2]/span[2]')
-        votes = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[1]/div/table/tbody/tr[' + row + ']/td[3]')
-        percent = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[1]/div/table/tbody/tr[' + row + ']/td[4]')
-        race_results_state[state].append([candidate, party, votes, percent])
+    race_results_state = [race_header]
+    while True:
+        try:
+            # whatever is likely to raise the exception
+            candidate = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[1]/div/table/tbody/tr[' + row + ']/td[1]/span/span[4]')
+            party = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[1]/div/table/tbody/tr[' + row + ']/td[2]/span[2]')
+            votes = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[1]/div/table/tbody/tr[' + row + ']/td[3]')
+            percent = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[1]/div/table/tbody/tr[' + row + ']/td[4]')
+            race_results_state.append([candidate, party, votes, percent])
+        except:
+            break
     return race_results_state
 
 def scrape_regional_details(state):
@@ -46,19 +49,19 @@ def scrape_regional_details(state):
     senate race. Dictionary looks like {state: [town name, winner votes, loser votes]}'''
 
     tree = get_tree(state)
-    race_results_regional = {}
     # senate_votes_by_town = state: [[town, winner, loser], [next], [next]...]
     winner = '//*[@id="eln-election-page"]/div/div[2]/div[4]/div/table/thead/tr/th[2]'
     loser = '//*[@id="eln-election-page"]/div/div[2]/div[4]/div/table/thead/tr/th[3]'
     region_header = ['Town or County Name', winner, loser]
-    race_results_regional[state] = [region_header]
-    for row in input_rows:
-        town = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[4]/div/table/tbody/tr[' + row + ']/td[1]')
-        winner_votes = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[4]/div/table/thead/tr' + row + '/td[2]')
-        loser_votes = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[4]/div/table/tbody/tr[' + row + ']/td[3]/div')
-        race_results_regional[state].append([town, winner_votes, loser_votes])
+    race_results_regional = [region_header]
+    while True:
+        try:
+            # whatever is likely to raise the exception
+            town = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[4]/div/table/tbody/tr[' + row + ']/td[1]')
+            winner_votes = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[4]/div/table/thead/tr' + row + '/td[2]')
+            loser_votes = tree.xpath('//*[@id="eln-election-page"]/div/div[2]/div[4]/div/table/tbody/tr[' + row + ']/td[3]/div')
+            race_results_regional[state].append([town, winner_votes, loser_votes])
+            row += 1
+        except:
+            break
     return race_results_regional
-
-
-
-#INPUT ROWS REMAINS UNDEFINED
