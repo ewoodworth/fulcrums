@@ -1,6 +1,7 @@
 from lxml import html
 import requests
-import senate
+import senate, state_senate
+import json
 
 
 STATES = ['alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado',
@@ -14,11 +15,18 @@ STATES = ['alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado',
         'washington', 'west-virginia', 'wisconsin', 'wyoming']
 
 
-# state_page = requests.get('http://www.nytimes.com/elections/results/' + state)
-# state_tree = html.fromstring(state_page.content)
+results_2016 = {}
+
+def run_the_country(scope):
+    """Scope can be 'national', 'state', or 'county' """
+
+    races = ['presidential','senate', 'house', 'state_senate', 'state_assembly']
+    for state in STATES:
+        results_2016['national'][state]['local'] = senate.get_race_results(state, 'local')
+
 
 def scrape_senate_races():
-    print "line 20"
+
     senate_state_overviews = {}
     senate_regional_details = {}
 
@@ -36,4 +44,27 @@ def scrape_senate_races():
     text_file.write(regional_details)
     text_file.close()
 
-scrape_senate_races()
+def scrape_state_senate_races():
+    """ Writes one text file per state to file."""
+
+    state_senate_results_by_county = {}
+    state_senate_results_by_district = {}
+    for state in STATES:
+        print "PROCESSING ", state.upper()
+
+        state_senate_results_by_county = state_senate.get_race_results_by_county(state)
+        state_senate_results_by_district = state_senate.get_race_results_by_district(state)
+
+        by_county = json.dumps(state_senate_results_by_county)
+        text_file = open('State_Senate_By_County/state_senate_by_county_' + state + '.txt', 'w')
+        text_file.write(by_county)
+        text_file.close()
+
+        by_district = json.dumps(state_senate_results_by_district)
+        text_file = open('State_Senate_By_District/state_senate_by_district_' + state + '.txt', 'w')
+        text_file.write(by_district)
+        text_file.close()
+
+        print state.upper(), " DONE"
+
+scrape_state_senate_races()

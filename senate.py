@@ -3,16 +3,6 @@ import urllib
 import lxml
 import requests
 
-STATES = ['alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado',
-        'connecticut', 'delaware', 'florida', 'georgia', 'hawaii', 'idaho',
-        'illinois', 'indiana', 'iowa', 'kansas', 'kentucky', 'louisiana', 'maine',
-        'maryland', 'massachusetts', 'michigan', 'minnesota', 'mississippi',
-        'missouri', 'montana', 'nebraska', 'nevada', 'new-hampshire', 'new-jersey',
-        'new-mexico', 'new-york', 'north-carolina', 'north-dakota', 'ohio', 
-        'oklahoma', 'oregon', 'pennsylvania', 'rhode-island', 'south-carolina',
-        'south-dakota', 'tennessee', 'texas', 'utah', 'vermont', 'virginia',
-        'washington', 'west-virginia', 'wisconsin', 'wyoming']
-
 
 def generate_results_object_statewide(state, senate_soup):
     """Return a dictionary of states, with value lists of [[Candidate Name, Last_name 
@@ -61,8 +51,7 @@ def generate_results_object_by_county(state, senate_soup):
     """Return a dictionary of states, with value lists of [[County Name, 
     Votes for Winning Candidate, Votes for Second Place]...]"""
 
-    results_object_by_county = {}
-    results_object_by_county[state] = ["County Name", "Winner", "Runner Up"]
+    results_object_by_county = [["County Name", "Winner", "Runner Up"]]
     senate_race_results_by_county = senate_soup.find_all("table", class_="eln-county-table")
     try:
         senate_race_results_by_county[0]
@@ -89,7 +78,7 @@ def generate_results_object_by_county(state, senate_soup):
             loser_votes = loser_votes.replace(",", "")
             loser_votes = int(loser_votes)
             county_details = [county_name, winner_votes, loser_votes]
-            results_object_by_county[state].append(county_details)
+            results_object_by_county.append(county_details)
 
     return results_object_by_county
 
@@ -122,7 +111,7 @@ def get_race_details(state):
         index += 1
     return senate_candidate_list
 
-def get_race_results(state):
+def get_race_results(state, scope):
     """Check that a race was fought in this state, if so return results statewide 
     and local, else return None"""
 
@@ -138,7 +127,7 @@ def get_race_results(state):
         county_details = None
         statewide_details = None
     else:
-        #NYT HAS THREE POSSIBLE URL FORMATS FOR SENATE RACES, ONE W/ STATE NAME, ONE WITH THE TWO CANDIDATE NAMES
+        #NYT HAS THREE POSSIBLE URL FORMATS FOR SENATE RACES, ONE W/ STATE NAME, ONE WITH THE TWO CANDIDATE NAMES BUT ONLY THE DEM AND REP CANDIDATES
         r = requests.get("http://www.nytimes.com/elections/results/" + state + "-senate")
         check_soup = BeautifulSoup(r.content)
         div_w_404 = check_soup.find("div", class_="columnGroup")
@@ -151,12 +140,9 @@ def get_race_results(state):
                 senate_candidate_list = get_race_details(state)
                 r = requests.get("http://www.nytimes.com/elections/results/" + state + "-" + "senate-" + senate_candidate_list[1] + "-" + senate_candidate_list[0])                
         senate_soup = BeautifulSoup(r.content)
-        print generate_results_object_statewide(state, senate_soup)
-        print generate_results_object_by_county(state, senate_soup)
-
-
-def run_the_country():
-    for state in STATES:
-        get_race_results(state)
-
-run_the_country()
+        if scope == "state":
+            return generate_results_object_statewide(state)
+        elif scope == "county":
+            return generate_results_object_by_county(state)
+        else:
+            return None
