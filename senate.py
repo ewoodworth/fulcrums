@@ -16,33 +16,19 @@ def generate_results_object_statewide(state, senate_soup):
 
     for item in race_results:
         candidate_name = item.find("span", class_="eln-name-display")
-        candidate_name = candidate_name.get_text()
-        candidate_name = candidate_name.strip()
+        candidate_name = candidate_name.get_text().strip()
 
         candidate_last =  item.find("span", class_="eln-last-name")
-        candidate_last = candidate_last.get_text()
-        candidate_last = candidate_last.strip()
+        candidate_last = candidate_last.get_text().strip()
         
         candidate_party = item.find("span", class_="eln-party-display")
-        candidate_party = candidate_party.get_text()
-        candidate_party = candidate_party.strip()
+        candidate_party = candidate_party.get_text().strip()
 
         candidate_votes = item.find("td", class_="eln-votes")
-        candidate_votes = candidate_votes.get_text()
-        candidate_votes = candidate_votes.strip()
-        candidate_votes = candidate_votes.replace(",", "")
-        candidate_votes = int(candidate_votes)
-
-        candidate_percent = item.find("td", class_="eln-percent")
-        candidate_percent = candidate_percent.get_text()
-        candidate_percent = candidate_percent.strip()
-        candidate_percent = str(candidate_percent)
-        candidate_percent = candidate_percent.translate(None, "%")
-        candidate_percent = float(candidate_percent)
+        candidate_votes = int(candidate_votes.get_text().strip().replace(",", ""))
 
         results_object_statewide[state].append([candidate_name, candidate_last, 
-                                                candidate_party, candidate_votes, 
-                                                candidate_percent])
+                                                candidate_party, candidate_votes])
     return results_object_statewide
 
 

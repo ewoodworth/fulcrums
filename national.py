@@ -1,8 +1,7 @@
 from lxml import html
 import requests
-import senate, state_senate, state_assembly
+import senate, house, state_senate, state_assembly
 import json
-
 
 
 STATES = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
@@ -42,6 +41,29 @@ def scrape_senate_races():
     regional_details = json.dumps(senate_regional_details)
     text_file = open('senate_regional_details.txt', 'w')
     text_file.write(regional_details)
+    text_file.close()
+
+def scrape_house_races():
+    """ Writes one text file per state to file."""
+
+    house_results_by_county = ""
+    house_results_by_district = ""
+    for state in STATES:
+        print "PROCESSING", state.upper()
+
+        house_results_by_county += house.get_race_results_by_county(state)
+        house_results_by_district += house.get_race_results_by_district(state)
+
+        print state.upper(), "DONE"
+
+    by_county = str(house_results_by_county)
+    text_file = open('House_By_County/national' + '.txt', 'w')
+    text_file.write(by_county)
+    text_file.close()
+
+    by_district = str(house_results_by_district)
+    text_file = open('House_By_District/national' + '.txt', 'w')
+    text_file.write(by_district)
     text_file.close()
 
 def scrape_state_senate_races():
@@ -91,6 +113,6 @@ def scrape_state_assembly_races():
     text_file.close()
 
         
-
+scrape_house_races()
 # scrape_state_senate_races()
-scrape_state_assembly_races()
+# scrape_state_assembly_races()

@@ -3,6 +3,44 @@ import urllib
 import lxml
 import requests
 
+def connect_party_allignment(districtwide_table, state):
+    """Given a districtwide table, and candidate name, return a dictionary of 
+    candidates from that district and values of their party alligance"""
+
+    all_candidates_rows = districtwide_table.find_all("tr", class_ = "eln-row")
+    candidate_party = {}
+    if state == 'Colorado':
+        candidate_party['Brown'] = 'Republican'
+    elif state == 'Idaho':
+        candidate_party['Richards'] = 'Democrat'
+    elif state == 'Kentucky':
+        candidate_party['Shortt'] = 'Republican'
+    for row in all_candidates_rows:
+        candidate = row.find("span", class_="eln-name-display").get_text().strip().split(" ")
+        candidate = " ".join(candidate[1:]).replace("*", "")
+        party = row.find("span", class_="eln-party-display").get_text().replace(u'\u2019', '')
+        candidate_party[candidate] = party
+        # print candidate, party
+    return candidate_party
+
+def get_district_url(state, district):
+    """Given a state and district, return the content of the webpage outlining 
+    the district info for that district"""
+
+    #there are three possible formats for the state house url
+    #two for regular elections, depending on whether the state districts are named or numbered
+    #one for special state house elections
+
+    if state == 'Massachusetts' or state == 'Vermont':
+        r = requests.get('http://www.nytimes.com/elections/results/' + state.lower() + '-state-house-' + district)
+    elif state == 'Idaho':
+        r = requests.get('http://www.nytimes.com/elections/results/' + state.lower() + '-state-house-position-' + district)
+    elif state == 'Virginia' or state == 'Michigan':
+        r = requests.get('http://www.nytimes.com/elections/results/' + state.lower() + '-state-house-special-district-' + district)
+    else:
+        r = requests.get('http://www.nytimes.com/elections/results/' + state.lower() + '-state-house-district-' + district)
+
+    return r
 
 def get_active_districts(state):
     """Given a state, return a list of districts in which an election was held"""
@@ -14,8 +52,6 @@ def get_active_districts(state):
     district_rows = results_table[0].find_all("tr", class_="eln-group-row")
 
     districts = []
-
-    #michigan has two districts in special elections and a bunch of others in traditional ones BOO
 
     for item in district_rows:
         district = item.find("td", class_="eln-name-cell").get_text()
@@ -31,7 +67,6 @@ def get_active_districts(state):
         district = district.replace(", ", "-")
         district = district.replace(" ", "-")
         districts.append(district)
-    print districts
     return districts
 
 
@@ -53,16 +88,7 @@ def get_race_results_by_district(state):
             if state == 'Washington':
                 district = str(district[0:1])
 
-            #there are three possible formats for the state house url
-            #two for regular elections, depending on whether the state districts are named or numbered
-            #one for special state house elections   
-
-            if state == 'Massachusetts' or state == 'Vermont':
-                r = requests.get('http://www.nytimes.com/elections/results/' + state.lower() + '-state-house-' + district)
-            elif state == 'Virginia' or state == 'Michigan':
-                r = requests.get('http://www.nytimes.com/elections/results/' + state.lower() + '-state-house-special-district-' + district)
-            else:
-                r = requests.get('http://www.nytimes.com/elections/results/' + state.lower() + '-state-house-district-' + district)
+            r = get_district_url(state, district)
 
             state_house_soup = BeautifulSoup(r.content)
             districtwide_table = state_house_soup.find("table", class_ = "eln-results-table")
@@ -74,12 +100,10 @@ def get_race_results_by_district(state):
                 candidate = row.find("span", class_="eln-name-display").get_text().strip()
                 party = row.find("span", class_="eln-party-display").get_text().replace(u'\u2019', '')
                 votes = row.find("td", class_="eln-votes").get_text().replace(",", "")
-                results_by_district +=  ',' + candidate+ ',' + party + ',' + votes 
+                results_by_district +=  ',' + candidate+ ',' + party + ',' + votes
             results_by_district += '\n'
-        print results_by_district
         return results_by_district
     else:
-        return state + ',,,no state house/assembly race in 2016\n'
         return state + ',,,no state house/assembly race in 2016\n'
 
 def get_race_results_by_county(state):
@@ -94,50 +118,39 @@ def get_race_results_by_county(state):
         results_by_county = "State, District, County, Winner Votes, Winner, Runner Up Votes, Runner Up\n"
         for district in get_active_districts(state):
 
-            #there are three possible formats for the state house url
-            #two for regular elections, depending on whether the state districts are named or numbered
-            #one for special state house elections  
-
-            if state == 'Massachusetts' or state == 'Vermont':
-                r = requests.get('http://www.nytimes.com/elections/results/' + 
-                    state.lower() + '-state-house-' + district)
-            elif state == 'Virginia':
-                r = requests.get('http://www.nytimes.com/elections/results/' + state.lower() + '-state-house-special-district-' + district)
-            else:
-                r = requests.get('http://www.nytimes.com/elections/results/' + 
-                    state.lower() + '-state-house-district-' + district)
-
-
+            r = get_district_url(state, district)
+            
             state_house_soup = BeautifulSoup(r.content)
+            districtwide_table = state_house_soup.find("table", class_ = "eln-results-table")
             counties_in_district = state_house_soup.find("table", class_ = "eln-county-table")
+            candidate_parties = connect_party_allignment(districtwide_table, state)
 
             #sometimes the district doesn't have a sublist of conties
             #sometimes this is because the race is uncontested.
             
-            uncontested_race = state_house_soup.find("span", "eln-uncontested-label")
+            uncontested_race = districtwide_table.find("span", "eln-uncontested-label")
             if uncontested_race:
-                party = state_house_soup.find("span", class_="eln-party")
-                winner = state_house_soup.find("span", class_="eln-name")
+                party = districtwide_table.find("span", class_="eln-party-abbr").get_text().strip()
+                winner = districtwide_table.find("span", class_="eln-name-display").get_text().strip()
                 winner_votes = "uncontested"
-                results_by_county += state + ',' + district + ',' + 'uncontested race' + winner_votes + winner + ',,\n'
+                results_by_county += state + ',' + district + ',' + 'uncontested race,' + winner_votes + ',' + winner + ',' + party + ',\n'
             elif counties_in_district:
                 header = counties_in_district.find_all("th")
                 winner = header[1].get_text().strip()
+                winner_party = candidate_parties[winner]
                 loser =  header[2].get_text().strip()
+                loser_party = candidate_parties[loser]
                 all_county_rows = counties_in_district.find_all("tr", class_ = "eln-row")
                 for row in all_county_rows:
                     county = row.find("td", class_ = "eln-name").get_text().strip()
                     winner_votes = row.find("td", class_="eln-candidate").get_text().strip().replace(",", "")
-                    # winner_party = winner_votes.find("div", class_="eln-republican")
                     loser_votes = row.find("td", class_="eln-last-candidate").get_text().strip().replace(",", "")
-                    # loser_party = row.find("td", class_="eln-party").get_text()
-                    results_by_county += state + ',' + district + ',' + county + ',' + winner_votes + ',' +  winner + ',' + loser_votes + ',' + loser + '\n'
+                    results_by_county += state + ',' + district + ',' + county + ',' + winner_votes + ',' +  winner + ',' + winner_party + "," + loser_votes + ',' + loser + ',' + loser_party + '\n'
             else:
                 results_by_county += state + ',' + district + ',' + 'no county data at NYT\n'
-        print results_by_county    
         return results_by_county
     else:
-        print state + ',,,no state house/assembly race in 2016\n'
         return state + ',,,no state house/assembly race in 2016\n'
 
-# get_race_results_by_district('Arizona')
+# get_race_results_by_district('Georgia')
+# get_race_results_by_county('Georgia')
