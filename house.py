@@ -8,7 +8,8 @@ def get_district_url(state, district='1',winner='None',loser='None'):
     """Given a state and district (and the candidates' last names), return the 
     url of the webpage outlining the district info for that district"""
 
-    statewide_html = requests.get('http://www.nytimes.com/elections/results/' + state.lower())
+    statewide_html = requests.get('http://www.nytimes.com/elections/results/' +  \
+                                state.lower())
     statewide_page = BeautifulSoup(statewide_html.content)
     all_races = statewide_page.find("div", id="house"
                                         ).find_all("tr", class_='eln-group-row')
@@ -53,7 +54,7 @@ def get_district_url(state, district='1',winner='None',loser='None'):
         district_race_url = ('http://www.nytimes.com/elections/results/' + 
                             state.lower() + '-house-district-' + district + 
                             '-' + loser.lower() + '-' + winner.lower())
-    #some district urls are for 'House at Large' with specific formatting
+    #some district urls are for 'House at Large' with no way to compose the url from the statewide page
     elif state == 'Delaware':
         district_race_url = ('http://www.nytimes.com/elections/results/delaware-house-district-1-rochester-reigle')
     elif state == 'Alaska':
@@ -81,8 +82,7 @@ def get_race_results_by_district(state):
     Lines are 'state, district, candidate, party, districtwide votes (repated for 
     all candidates in that district) """
 
-    results_by_district = ("State, District, Candidate, Party, Votes, Candidate, \
-                            Party, Votes, Candidate, Party, Votes\n")
+    results_by_district = ("State, District, Candidate, Party, Votes\n")
 
     statewide_html = requests.get('http://www.nytimes.com/elections/results/' + 
                                 state.lower())
@@ -112,8 +112,7 @@ def get_race_results_by_district(state):
             party =  row.find("span", class_="eln-party-abbr").get_text().strip()
             votes = row.find("td", class_="eln-votes").get_text().strip(
                     ).replace(',', '')
-            results_by_district += ',' + candidate + ',' + party + ',' + votes
-        results_by_district += '\n'
+            results_by_district += ',' + candidate + ',' + party + ',' + votes + '\n'
         return results_by_district
     #'Normal' races have a page per district, from which we want the data
     else:
@@ -156,7 +155,7 @@ def get_race_results_by_district(state):
 
                 district_candidates = district_house_soup.find("table", class_="eln-results-table"
                                                         ).find_all("tr", class_="eln-row")
-                results_by_district += state + district
+                
                 for row in district_candidates:
                     candidate = row.find("span", class_="eln-name-display"
                                 ).get_text(
@@ -168,8 +167,7 @@ def get_race_results_by_district(state):
                     party =  row.find("span", class_="eln-party-abbr").get_text().strip()
                     votes = row.find("td", class_="eln-votes").get_text().strip(
                             ).replace(',', '')
-                    results_by_district += ',' + candidate + ',' + party + ',' + votes
-                results_by_district += '\n'
+                    results_by_district += state + ',' + district + ',' + candidate + ',' + party + ',' + votes + '\n'
         return results_by_district
 
 def get_race_results_by_county(state):

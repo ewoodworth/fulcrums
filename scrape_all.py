@@ -21,23 +21,20 @@ def scrape_state_house_races():
     house_results_by_county = ""
     house_results_by_district = ""
     for state in STATES:
-        # print "PROCESSING", state.upper()
-        print state
-        get_state_house_race_results_statewide(state)
-    return
+        print "PROCESSING", state.upper()
+        state_house_results_by_district += get_state_house_race_results_statewide(state)[by_district]
+        state_house_results_by_county += get_state_house_race_results_statewide(state)[by_county]
+        print state.upper(), "DONE"
 
-        # print state.upper(), "DONE"
+    by_district = str(state_house_results_by_district)
+    text_file = open('Race_Results/state_house_by_district' + '.txt', 'w')
+    text_file.write(by_district)
+    text_file.close()
 
-    # by_county = str(house_results_by_county)
-    # text_file = open('House_By_County/national' + '.txt', 'w')
-    # text_file.write(by_county)
-    # text_file.close()
-
-    # by_district = str(house_results_by_district)
-    # text_file = open('House_By_District/national' + '.txt', 'w')
-    # text_file.write(by_district)
-    # text_file.close()
-
+    by_county = str(state_house_results_by_county)
+    text_file = open('Race_Results/state_house_results_by_county' + '.txt', 'w')
+    text_file.write(by_county)
+    text_file.close()
 
 def get_state_house_race_results_statewide(state):
     """ For a given 'State' return a dictionary with keys 'by_district' and 
@@ -45,7 +42,6 @@ def get_state_house_race_results_statewide(state):
     Candidate Name, Party, Votes, Last Name \n' and 'State, District, County Name, 
     Winner Votes, Loser Votes' """
 
-    state = 'Massachusetts'
     results_statewide = ('State, Candidate, Party, Votes\n')
     statewide_html = requests.get('http://www.nytimes.com/elections/results/' + \
                                     state.lower())
@@ -69,38 +65,36 @@ def get_state_house_race_results_statewide(state):
                                                      ).replace("State House Results", ""
                                                      ).replace(state, ""
                                                      )
-            print district
+            candidates_table = state_house_race_statewide_soup.find('table', class_= 'eln-results-table')
+            candidiate_rows = candidates_table.find_all('tr', class_= 'eln-row')
 
-            # candidates_table = state_house_race_statewide_soup.find('table', class_= 'eln-results-table')
-            # candidiate_rows = candidates_table.find_all('tr', class_= 'eln-row')
+            candidate_affiliation = {}
 
-            # candidate_affiliation = {}
+            for row in candidiate_rows:
+                state_house_race_results_by_district = 'Candidate, Party, Votes, Last Name\n'
+                candidiate = row.find('td', class_= 'eln-name').find('span', class_='eln-name-display').get_text().strip()
+                last_name = 
+                party = row.find('td', class_= 'eln-party').find('span', class_='eln-party-display').get_text().strip()
+                votes = row.find('td', class_= 'eln-votes').get_text().strip().replace(',', '')
+                state_house_race_results_by_district += candidiate + ',' + party + ',' + votes+ '\n'
+                candidate_affiliation[last_name] = party
+            statewide_state_house_race_results['by_district'] = state_house_race_results_by_district
 
-            # for row in candidiate_rows:
-            #     state_house_race_results_by_district = 'Candidate, Party, Votes, Last Name\n'
-            #     candidiate = row.find('td', class_= 'eln-name').find('span', class_='eln-name-display').get_text().strip()
-            #     last_name = 
-            #     party = row.find('td', class_= 'eln-party').find('span', class_='eln-party-display').get_text().strip()
-            #     votes = row.find('td', class_= 'eln-votes').get_text().strip().replace(',', '')
-            #     state_house_race_results_by_district += candidiate + ',' + party + ',' + votes+ '\n'
-            #     candidate_affiliation[last_name] = party
-            # statewide_state_house_race_results['by_district'] = state_house_race_results_by_district
+            counties_table = house_race_statewide_soup.find('table', 'eln-county-table')
+            county_rows = counties_table.find_all('tr', class_='eln-row')
 
-            # counties_table = house_race_statewide_soup.find('table', 'eln-county-table')
-            # county_rows = counties_table.find_all('tr', class_='eln-row')
+            winner = counties_table.find('th', class_='')
+            loser = counties_table.find('th', class_='')
+            winning_party = candidate_affiliation[winner]
+            loser_party = candidate_affiliation[loser]
 
-            # winner = counties_table.find('th', class_='')
-            # loser = counties_table.find('th', class_='')
-            # winning_party = candidate_affiliation[winner]
-            # loser_party = candidate_affiliation[loser]
-
-            # state_house_race_results_by_county = state + district + '\n'
-            # for county_row in county_rows:
-            #     county = county_row.find('td', 'eln-name').get_text().strip()
-            #     winner_votes = county_row.find('td', 'eln-candidate').get_text().strip().replace(',', '')
-            #     loser_votes = county_row.find('td', 'eln-last-candidate').get_text().strip().replace(',', '')
-            #     state_house_race_results_by_county += county + ',' + winner_votes + ',' + loser_votes
-            # statewide_state_house_race_results['by_county'] = state_house_race_results_by_county
+            state_house_race_results_by_county = state + district
+            for county_row in county_rows:
+                county = county_row.find('td', 'eln-name').get_text().strip()
+                winner_votes = county_row.find('td', 'eln-candidate').get_text().strip().replace(',', '')
+                loser_votes = county_row.find('td', 'eln-last-candidate').get_text().strip().replace(',', '')
+                state_house_race_results_by_county += county + ',' + winner_votes + ',' + loser_votes +'\n'
+            statewide_state_house_race_results['by_county'] = state_house_race_results_by_county
     else:
         statewide_state_house_race_results['by_district'] = state + ",,No State House/Assembly race in" + state + "this election"
         statewide_state_house_race_results['by_county'] = state + ",,,no State House/Assembly race in" + state + "this election"
