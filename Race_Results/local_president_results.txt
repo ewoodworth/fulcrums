@@ -1,0 +1,59 @@
+State, District, County,Clinton,Democrat,Winning Votes,Trump,Republican,Losing Votes
+Los Angeles,2464364,769743
+San Diego,735476,477766
+Orange,609961,507148
+Riverside,373695,333243
+Santa Clara,511684,144826
+Alameda,514842,95922
+San Bernardino,340833,271240
+Sacramento,326023,189789
+Contra Costa,319287,115956
+San Francisco,345084,37688
+Ventura,194402,132323
+San Mateo,237882,57929
+Fresno,141341,124049
+Kern,98689,129584
+Sonoma,160435,51408
+San Joaquin,121124,88936
+Placer,73509,95138
+Santa Barbara,107142,56365
+Stanislaus,81647,78494
+Solano,102360,51920
+Marin,108707,21771
+San Luis Obispo,67107,56164
+Monterey,89088,34895
+Santa Cruz,95249,22438
+Tulare,47585,58299
+Butte,41567,45144
+El Dorado,36404,49247
+Yolo,54752,20739
+Shasta,22301,51778
+Merced,37317,28725
+Napa,39199,17411
+Humboldt,33200,18373
+Nevada,26053,23365
+Imperial,32667,12704
+Madera,17029,23357
+Mendocino,22079,10888
+Kings,13617,18093
+Sutter,13076,18176
+Tuolumne,9123,14551
+Lake,11496,10599
+Tehama,6809,15494
+Calaveras,7944,13511
+Yuba,7910,13170
+San Benito,12521,7841
+Siskiyou,7234,11341
+Amador,6004,10485
+Lassen,2224,7574
+Plumas,3459,5420
+Del Norte,3485,5134
+Glenn,3065,5788
+Mariposa,3122,5185
+Inyo,3155,4248
+Colusa,2661,3551
+Trinity,2214,2812
+Mono,2773,2111
+Modoc,877,2696
+Sierra,601,1048
+Alpine,334,217

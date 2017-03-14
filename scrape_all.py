@@ -4,15 +4,17 @@ import lxml
 import requests
 
 
-STATES = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
-        'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 
-        'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine',
-        'Maryland', 'Massachusetts', 'Minnesota', 'Mississippi',
-        'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New-Hampshire',
-        'New-Mexico', 'New-York', 'North-Carolina', 'North-Dakota', 'Ohio', 
-        'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode-Island', 'South-Carolina',
-        'South-Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia',
-        'Washington', 'West-Virginia', 'Wisconsin', 'Wyoming']
+# STATES = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
+#         'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 
+#         'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine',
+#         'Maryland', 'Massachusetts', 'Minnesota', 'Mississippi',
+#         'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New-Hampshire',
+#         'New-Mexico', 'New-York', 'North-Carolina', 'North-Dakota', 'Ohio', 
+#         'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode-Island', 'South-Carolina',
+#         'South-Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia',
+#         'Washington', 'West-Virginia', 'Wisconsin', 'Wyoming']
+
+STATES = ['California']
 
 RACES = ['president', 'senate', 'house', 'state_house', 'state_senate']
 
@@ -26,19 +28,26 @@ def scrape(race, state):
                     'state_senate': get_state_senate_race_results,
                     }
 
-    for race in races:
+    fn_to_call = scraping_scripts[race]
+    return fn_to_call(state)
+
+def record():
+    for race in RACES:
+        statewide_data = ""
+        local_data = ""
         for state in STATES:
-            race_data_dict = scraping_scripts[race](state)
+            race_data_dict = scrape(race, state)
+            statewide_data += str(race_data_dict['statewide'])
+            local_data += str(race_data_dict['local'])
 
-            statewide_data = str(race_data_dict[statewide])
-            text_file = open('Race_Results/statewide_' + race + '_results.txt', 'w')
-            text_file.write(statewide_data)
-            text_file.close()
+        text_file = open('Race_Results/statewide_' + race + '_results.txt', 'w')
+        text_file.write(statewide_data)
+        text_file.close()
 
-            local_data = str(race_data_dict[local])
-            text_file = open('Race_Results/local_' + race + '_results.txt', 'w')
-            text_file.write(local_data)
-            text_file.close()
+        text_file = open('Race_Results/local_' + race + '_results.txt', 'w')
+        text_file.write(local_data)
+        text_file.close()
+
 
 def get_state_house_race_results(state):
     """ For a given 'State' return a dictionary with keys 'statewide' and 
@@ -258,15 +267,27 @@ def get_senate_race_results(state):     #####THIS IS SIGNIFICANTLY DIFFERENT
         elif senate_race_statewide_soup.find('table', 'eln-county-table'):
             counties_table = senate_race_statewide_soup.find('table', 'eln-county-table')
             county_rows = counties_table.find_all('tr', class_='eln-row')
-            winner = counties_table.find_all('th', class_='eln-candidate')[0].get_text().strip()
-            loser = counties_table.find_all('th', class_='eln-candidate')[1].get_text().strip()
+            winner = counties_table.find_all('th', class_='eln-candidate'
+                               )[0].get_text(
+                               ).strip()
+            loser = counties_table.find_all('th', class_='eln-candidate'
+                              )[1].get_text(
+                                 ).strip()
             winning_party = candidate_affiliation[winner]
             loser_party = candidate_affiliation[loser]
-            senate_race_results_local = 'State, District, County,' + winner + ',' + winning_party + ',Winning Votes,' + loser + ',' + loser_party + ',Losing Votes\n'
+            senate_race_results_local = ('State, District, County,' + winner + 
+                                        ',' + winning_party + ',Winning Votes,' + 
+                                        loser + ',' + loser_party + ',Losing Votes\n')
             for county_row in county_rows:
                 county = county_row.find('td', 'eln-name').get_text().strip()
-                winner_votes = county_row.find('td', 'eln-candidate').get_text().strip().replace(',', '')
-                loser_votes = county_row.find('td', 'eln-last-candidate').get_text().strip().replace(',', '')
+                winner_votes = county_row.find('td', 'eln-candidate'
+                                        ).get_text(
+                                        ).strip(
+                                        ).replace(',', '')
+                loser_votes = county_row.find('td', 'eln-last-candidate'
+                                       ).get_text(
+                                       ).strip(
+                                       ).replace(',', '')
                 senate_race_results_local += county + ',' + winner_votes + ',' + loser_votes +'\n'
         else:
             statewide_senate_race_results['local'] = state + ',' + district + ',no county level data from NYT'
@@ -368,7 +389,7 @@ def get_house_race_results(state):
     return statewide_house_race_results
 
 
-def get_presidential_race_results(state):     #####THIS IS SIGNIFICANTLY DIFFERENT
+def get_presidential_race_results(state):     #####THIS IS SIGNIFICANTLY DIFFERENT MATCHES ONLY SENATE
     """ For a given 'State' return a dictionary with keys 'statewide' and 
     'local' which are two csv formatted strings:'State, District, 
     Candidate Name, Party, Votes, Last Name \n' and 'State, District, County Name, 
@@ -437,3 +458,5 @@ def get_presidential_race_results(state):     #####THIS IS SIGNIFICANTLY DIFFERE
 
     print statewide_presidential_race_results
     return statewide_presidential_race_results
+
+record()
