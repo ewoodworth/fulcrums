@@ -65,6 +65,7 @@ def get_race_results(state, race):
     if race_div:
         print race      
         if race == 'president' or 'senate':
+            print race
             race_urls = [race_div.find('a')['href']]
         else:
             race_districts = race_div.find_all('td', class_="eln-winner")
