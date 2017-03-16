@@ -1,4 +1,4 @@
-State, District, Candidate, Party, Votes, Last Name
+State, Candidate, Party, Votes, Last Name
 California,,Hillary Clinton,Democrat,8753788,Clinton
 California,,Donald J. Trump,Republican,4483810,Trump
 California,,Gary Johnson,Libertarian,478500,Johnson
