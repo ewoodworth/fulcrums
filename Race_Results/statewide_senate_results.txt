@@ -1,3 +1,3 @@
-State, Candidate, Party, Votes
-California,Kamala Harris,Democrat,6495907,Harris
-California,Loretta Sanchez,Democrat,3918486,Sanchez
+State, District, Candidate, Party, Votes, Last Name
+California,,Kamala Harris,Democrat,6495907,Harris
+California,,Loretta Sanchez,Democrat,3918486,Sanchez
