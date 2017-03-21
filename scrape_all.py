@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import urllib
 import lxml
 import requests
+import pprint
 
 
 # STATES = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
@@ -18,181 +19,204 @@ STATES = ['California']
 
 RACES = ['president', 'senate', 'house', 'state-house', 'state-senate']
 
+PARTIES = ["Constitution","Democrat","Green","Independent","Independent American",
+           "Libertarian","Liberty Union","Mountain Party","P.S.L.","Pacific Green",
+           "Pacifist","Party","Peace and Freedom","Petitioning Candidate","Reform",
+           "Republican","Socialist U.S.A.","Socialist Workers",
+           "Veteran's Party of America","Workers World"]
 
-# def scrape(race, state):
-#     scraping_scripts = {
-#                     'president': get_presidential_race_results,
-#                     'senate': get_senate_race_results,
-#                     'house': get_house_race_results,
-#                     'state_house': get_state_house_race_results,
-#                     'state_senate': get_state_senate_race_results,
-#                     }
-
-#     fn_to_call = scraping_scripts[race]
-#     return fn_to_call(state)
+THIRD_PARTIES = ["Constitution","Green","Independent","Independent American",
+           "Libertarian","Liberty Union","Mountain Party","P.S.L.","Pacific Green",
+           "Pacifist","Party","Peace and Freedom","Petitioning Candidate","Reform",
+           "Socialist U.S.A.","Socialist Workers", "Veteran's Party of America",
+           "Workers World"]
 
 def record():
     for race in RACES:
         statewide_data = ""
         local_data = ""
+        race_results = {}
+        race_results[race] = {}
         for state in STATES:
-            race_data_dict = get_race_results(state, race)
-            print race_data_dict
-            statewide_data += str(race_data_dict['statewide'])
-            local_data += str(race_data_dict['local'])
+            print state, "Start", race
+            race_results[race][state] = get_race_results(state, race)
+            print state, "Complete"
 
-        text_file = open('Race_Results/statewide_' + race + '_results.txt', 'w')
-        text_file.write(statewide_data)
-        text_file.close()
+        # text_file = open('Race_Results/statewide_' + race + '_results.txt', 'w')
+        # text_file.write(statewide_data)
+        # text_file.close()
 
-        text_file = open('Race_Results/local_' + race + '_results.txt', 'w')
-        text_file.write(local_data)
-        text_file.close()
-
+        # text_file = open('Race_Results/local_' + race + '_results.txt', 'w')
+        # text_file.write(local_data)
+        # text_file.close()
 
 def get_race_results(state, race):
-    """ For a given 'State' return a dictionary with keys 'statewide' and 
-    'local' which are two csv formatted strings:'State, District, 
-    Candidate Name, Party, Votes, Last Name \n' and 'State, District, County Name, 
-    Winner Votes, Loser Votes' """
+    """ For a given 'State' and 'race' returns a dictionary 
+    [STATE][DISTRICT][COUNTY][CANDIDIATE][ATTRIBUTE]: attribute value
+     """
 
     statewide_html = requests.get('http://www.nytimes.com/elections/results/' + \
                                     state.lower())
     statewide_soup = BeautifulSoup(statewide_html.content, "lxml")
     race_div = statewide_soup.find("div", id=race)
-    race_results_local = ""
     race_results = {}
-    # local_results_dict = {}
 
+    # check that this particular race exists at all this election
     if race_div:
+        
+        #P/S races cover the whole state (no districts)
+        #from this conditional, spit out list of race urls. In case os P/S is list of one
         if race == 'president' or race == 'senate':
             race_urls = [race_div.find('a')['href']]
-            race_results_statewide = 'State, Candidate, Party, Votes, Last Name\n'
         else:
             race_districts = race_div.find_all('td', class_="eln-winner")
             race_urls = [district.find('a')['href'] for district in race_districts]
-            race_results_statewide = 'State, District, Candidate, Party, Votes, Last Name\n'
 
         for url in race_urls:
             race_districtwide_html = requests.get(url)
             race_districtwide_soup = BeautifulSoup(race_districtwide_html.content, "lxml")
-
-            if race_districtwide_soup.find('h1', class_='eln-headline'):
-                district = race_districtwide_soup.find('h1', class_='eln-headline'
-                                                 ).get_text(
-                                                 ).split(":"
-                                                 )[0].replace("Results", ""
-                                                 ).replace("District", ""
-                                                 ).replace("U.S.",""
-                                                 ).replace("House", ""
-                                                 ).replace("State Assembly", ""
-                                                 ).replace("Senate",""
-                                                 ).replace("State",""
-                                                 ).replace("Presidential",""
-                                                 ).replace("Race",""
-                                                 ).replace(state, ""
-                                                 ).strip(
-                                                 )
-                # local_results_dict[district] = {}
+            #GET THE DISTRICT NAME OR NUMBER TRACKING THAT P/S ONLY HAVE ONE DISTRICT
+            if race == 'president' or race == 'senate':
+                district = 'statewide'
             else:
-                district = ''
-
+                if race_districtwide_soup.find('h1', class_='eln-headline'):
+                    state_normal = state.replace("-", " ")
+                    if state == 'Massachusetts' or state =='Vermont':
+                        #YES, I COULD FIX ALL THE FORTHCOMING UNICODE BALONEY BY SWITCHING TO PYTHON 3. ONE THING AT A TIME.
+                        district = race_districtwide_soup.find('h1', class_='eln-headline'
+                                                         ).get_text(
+                                                         ).split(":"
+                                                         )[0].replace("Results", ""
+                                                         ).replace("District", ""
+                                                         ).replace("U.S.",""
+                                                         ).replace("House", ""
+                                                         ).replace("State Assembly", ""
+                                                         ).replace("Senate",""
+                                                         ).replace("State",""
+                                                         ).replace("Presidential",""
+                                                         ).replace("Race",""
+                                                         ).replace(u'\u2013', '-'
+                                                         ).replace(state_normal, ""
+                                                         ).strip(
+                                                         )
+                    else:
+                        district_header = race_districtwide_soup.find('h1', class_='eln-headline'
+                                     ).get_text()
+                        district_digits = [char for char in district_header if char.isdigit()]
+                        district = "".join(district_digits)
+                        district = int(district)
+            race_results[district] = {}
             candidates_table = race_districtwide_soup.find('table', class_= 'eln-results-table')
-            candidiate_rows = candidates_table.find_all('tr', class_= 'eln-row')
-
-            candidate_affiliation = {}
-
-            for row in candidiate_rows:
-                candidiate = row.find('td', class_= 'eln-name'
+            candidate_rows = candidates_table.find_all('tr', class_= 'eln-row')
+            #GET THE CANDIDIATE INFO FOR THAT DISTRICT
+            race_results[district]['districtwide'] = {}
+            for row in candidate_rows:
+                candidate_name = row.find('td', class_= 'eln-name'
                                 ).find('span', class_='eln-name-display'
                                 ).get_text(
                                 ).strip(
+                                ).replace(u'\u2019', "'"
+                                ).replace(u'\u2013', '-'
                                 ).replace(u'\xe1', 'a'
                                 ).replace(u'\xe9', 'e'
-                                ).replace(u'\xed', 'i'
+                                ).replace(u'\xfa', 'i'
                                 ).replace(u'\xf3', 'o'
-                                ).replace(u'\xed', 'u')
+                                ).replace(u'\xfa', 'u')
                 last_name = row.find('span', class_='eln-last-name'
                               ).get_text(
                               ).strip(
+                              ).replace(u'\u2019', "'"
+                              ).replace(u'\u2013', '-'
                               ).replace(u'\xe1', 'a'
                               ).replace(u'\xe9', 'e'
-                              ).replace(u'\xed', 'i'
+                              ).replace(u'\xfa', 'i'
                               ).replace(u'\xf3', 'o'
-                              ).replace(u'\xed', 'u'
+                              ).replace(u'\xfa', 'u'
                               ).replace('*', '')
-                party = row.find('td', class_= 'eln-party'
+
+                candidate_party = row.find('td', class_= 'eln-party'
                           ).find('span', class_='eln-party-display'
                           ).get_text(
+                          ).replace(u'\u2019', "'"
+                          ).replace(u'\u2013', '-'
                           ).strip()
+
                 votes = row.find('td', class_= 'eln-votes'
                           ).get_text(
                           ).strip(
                           ).replace(',', '')
-                race_results_statewide += state + ',' + district + ',' + candidiate + ',' + \
-                                party + ',' + votes + ',' + last_name + '\n'
-                candidate_affiliation[last_name] = party
+
+                #CREATE SPACE FOR THE BASIC DISTRICTWIDEWIDE ENTRY FOR A CANDIDATE. THIS WILL HAPPEN ONCE PER DISTRICT PER CANDIDIATE
+                race_results[district]['districtwide'][last_name] = {}
+
+                #DEFINE THE BASIC DISTRICTWIDE ENTRY FOR A CANDIDATE. THIS WILL HAPPEN ONCE PER DISTRICT PER CANDIDIATE
+                race_results[district]['districtwide'][last_name]['votes'] = votes
+                race_results[district]['districtwide'][last_name]['name'] = candidate_name
+                race_results[district]['districtwide'][last_name]['last'] = last_name
+                race_results[district]['districtwide'][last_name]['party'] = candidate_party
+
+                #UNCONTESTED RACES GET DEFINED ON THE STAEWIDE PAGE, SO THIS HAS TO HAPPEN IN THIS LOOP
                 uncontested = row.find('span', class_='eln-uncontested-label')
 
-            if uncontested:
-                race_results_local = state + ',' + district + ',uncontested race\n'
-            elif race_districtwide_soup.find('table', 'eln-county-table'):
+                if uncontested:
+                    race_results[district]['districtwide'][last_name]['votes'] = "Uncontested Race"
+
+            if race_districtwide_soup.find('table', 'eln-county-table'):
                 counties_table = race_districtwide_soup.find('table', 'eln-county-table')
                 county_rows = counties_table.find_all('tr', class_='eln-row')
-                winner = counties_table.find_all('th', class_='eln-candidate'
-                                   )[0].get_text(
-                                      ).strip(
-                                      ).replace(u'\xe1', 'a'
-                                      ).replace(u'\xe9', 'e'
-                                      ).replace(u'\xed', 'i'
-                                      ).replace(u'\xf3', 'o'
-                                      ).replace(u'\xed', 'u')
-                loser = counties_table.find_all('th', class_='eln-candidate'
-                                  )[1].get_text(
-                                     ).strip(
-                                     ).replace(u'\xe1', 'a'
-                                     ).replace(u'\xe9', 'e'
-                                     ).replace(u'\xed', 'i'
-                                     ).replace(u'\xf3', 'o'
-                                     ).replace(u'\xed', 'u')
-                winning_party = candidate_affiliation[winner]
-                losing_party = candidate_affiliation[loser]
-                race_results_local += ('State, District, County,' + winner + ' Votes (' 
-                                      + winning_party + '),' + loser + ' Votes (' + 
-                                      losing_party + '),\n')
 
                 for county_row in county_rows:
                     county = county_row.find('td', 'eln-name'
                                       ).get_text(
+                                      ).replace(u'\u2019', "'"
+                                      ).replace(u'\u2013', '-'
                                       ).strip()
-                    # local_results_dict[district][county] = {}
+                    winner = counties_table.find_all('th', class_='eln-candidate'
+                                       )[0].get_text(
+                                          ).strip(
+                                          ).replace(u'\xe1', 'a'
+                                          ).replace(u'\xe9', 'e'
+                                          ).replace(u'\xed', 'i'
+                                          ).replace(u'\xf3', 'o'
+                                          ).replace(u'\xed', 'u')
                     winner_votes = county_row.find('td', 'eln-candidate'
                                             ).get_text(
                                             ).strip(
                                             ).replace(',', '')
+                    loser = counties_table.find_all('th', class_='eln-candidate'
+                                      )[1].get_text(
+                                         ).strip(
+                                         ).replace(u'\xe1', 'a'
+                                         ).replace(u'\xe9', 'e'
+                                         ).replace(u'\xed', 'i'
+                                         ).replace(u'\xf3', 'o'
+                                         ).replace(u'\xed', 'u')
                     loser_votes = county_row.find('td', 'eln-last-candidate'
                                            ).get_text(
                                            ).strip(
                                            ).replace(',', '')
-                    # local_results_dict[district][county][winning_party] = []
-                    # local_results_dict[district][county][losing_party] = []
-                    # local_results_dict[district][county][winning_party].append([winner, votes])
-                    # local_results_dict[district][county][losing_party].append([loser, votes])
-                    # local_results_dict[district][county]['Republican']
-                    # local_results_dict[district][county]['Democrat']           this is valuable but i need to find all options for party first
-                    race_results_local += (state + ',' + district + ',' + county + 
-                                          ',' + winner_votes + ',' + loser_votes + '\n')
-            else:
-                race_results_local += state + ',' + district + ',no county level data from NYT'
 
-        race_results['statewide'] = race_results_statewide
-        race_results['local'] = race_results_local
+                    race_results[district][county] = {}
+                    race_results[district][county][winner] = {}
+                    race_results[district][county][loser] = {}
+
+                    race_results[district][county][winner]['name'] = race_results[district]['districtwide'][winner]['name']
+                    race_results[district][county][winner]['last'] = race_results[district]['districtwide'][winner]['last']
+                    race_results[district][county][winner]['party'] = race_results[district]['districtwide'][winner]['party']
+                    race_results[district][county][winner]['votes'] = winner_votes
+
+                    race_results[district][county][loser]['name'] = race_results[district]['districtwide'][loser]['name']
+                    race_results[district][county][loser]['last'] = race_results[district]['districtwide'][loser]['last'] 
+                    race_results[district][county][loser]['party'] = race_results[district]['districtwide'][loser]['party']
+                    race_results[district][county][loser]['votes'] = loser_votes
+
+            elif uncontested is not None:
+                race_results[district] = "No county level data from NYT"
 
     else:
-        race_results['statewide'] = state + ",,No " + race + " race in" + state + "this election"
-        race_results['local'] = state + ",,,No " + race + " race in" + state + "this election"
+        race_results = "No " + race + " race in" + state + "this election"
 
-    print local_results_dict
+    pprint.pprint(race_results)
     return race_results
 
 record()

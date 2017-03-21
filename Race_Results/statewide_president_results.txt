@@ -1,7 +1,0 @@
-State, Candidate, Party, Votes, Last Name
-California,,Hillary Clinton,Democrat,8753788,Clinton
-California,,Donald J. Trump,Republican,4483810,Trump
-California,,Gary Johnson,Libertarian,478500,Johnson
-California,,Jill Stein,Green,278657,Stein
-California,,Others,Independent,177028,Others
-California,,Gloria La Riva,Peace and Freedom,66101,La Riva
