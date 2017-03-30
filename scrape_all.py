@@ -5,31 +5,86 @@ import requests
 import pprint
 
 
-# STATES = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
-#         'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 
-#         'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine',
-#         'Maryland', 'Massachusetts', 'Minnesota', 'Mississippi',
-#         'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New-Hampshire',
-#         'New-Mexico', 'New-York', 'North-Carolina', 'North-Dakota', 'Ohio', 
-#         'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode-Island', 'South-Carolina',
-#         'South-Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia',
-#         'Washington', 'West-Virginia', 'Wisconsin', 'Wyoming']
+STATES = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
+        'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 
+        'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine',
+        'Maryland', 'Massachusetts', 'Minnesota', 'Mississippi',
+        'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New-Hampshire',
+        'New-Mexico', 'New-York', 'North-Carolina', 'North-Dakota', 'Ohio', 
+        'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode-Island', 'South-Carolina',
+        'South-Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia',
+        'Washington', 'West-Virginia', 'Wisconsin', 'Wyoming']
 
-STATES = ['California']
+# STATES = ['California']
+# RACES = ['president']
 
 RACES = ['president', 'senate', 'house', 'state-house', 'state-senate']
 
-PARTIES = ["Constitution","Democrat","Green","Independent","Independent American",
+PARTIES = ["Democrat", "Republican", "Constitution","Green","Independent","Independent American",
            "Libertarian","Liberty Union","Mountain Party","P.S.L.","Pacific Green",
            "Pacifist","Party","Peace and Freedom","Petitioning Candidate","Reform",
-           "Republican","Socialist U.S.A.","Socialist Workers",
-           "Veteran's Party of America","Workers World"]
+           "Socialist U.S.A.","Socialist Workers", "Veteran's Party of America","Workers World"]
 
 THIRD_PARTIES = ["Constitution","Green","Independent","Independent American",
            "Libertarian","Liberty Union","Mountain Party","P.S.L.","Pacific Green",
            "Pacifist","Party","Peace and Freedom","Petitioning Candidate","Reform",
            "Socialist U.S.A.","Socialist Workers", "Veteran's Party of America",
            "Workers World"]
+
+def sort_race_results_by_party():
+    """ """
+    for race in RACES:
+        statewide_data = ""
+        local_data = ""
+        race_results = {}
+        race_results[race] = {}
+        text_file = open('Race_Results/' + race + '_results.txt', 'w')
+        answer = ""
+        for state in STATES:
+            print state, "Start", race
+            race_results[race][state] = get_race_results(state, race)
+            print state, "Complete"
+            districts = race_results[race][state].keys()
+            for district in districts:
+                counties = race_results[race][state][district].keys()
+                # for county in counties:
+                    # print county
+                for county in counties:
+                    candidates = race_results[race][state][district][county].keys()
+                    answer_list = [[],[],[],[]]
+                    answer_list[0] = state + ',' + district + ',' + county
+                    # print answer_list[0], candidates
+                    for candidate in candidates:
+                        # print county
+                        # print race_results[race][state][district][county][candidate]['name']
+                        candidate_name = race_results[race][state][district][county][candidate]['name']
+                        candidate_votes = race_results[race][state][district][county][candidate]['votes']
+                        candidate_last = race_results[race][state][district][county][candidate]['last']
+                        candidate_party = race_results[race][state][district][county][candidate]['party']
+                        answer_line = candidate_name + ',' + candidate_party + ',' + candidate_votes + ',' + candidate_last
+                        if candidate_party == 'Democrat':
+                            answer_list[1].append(answer_line)
+                        elif candidate_party == 'Republican':
+                            answer_list[2].append(answer_line)
+                        else:
+                            answer_list[3].append(answer_line)
+                        # print answer_list
+                    if len(answer_list[1]) > 1:
+                        answer_list[3] += answer_list[1][1:]
+                        answer_list[1] = answer_list[1][0]
+                    if len(answer_list[2]) > 1:
+                        answer_list[3] += answer_list[1][1:]
+                        answer_list[2] = answer_list[2][0]
+                    answer_list[1] = str(answer_list[1]).replace('[','').replace(']','').replace("'","")
+                    answer_list[2] = str(answer_list[2]).replace('[','').replace(']','').replace("'","")
+                    answer_list[3] = str(answer_list[3]).replace('[','').replace(']','').replace("'","")
+                    answer_string = (",".join(answer_list) + '\n').replace(',u', ',').replace(',,', ',')
+                    answer += answer_string
+        print answer
+        text_file.write(answer)
+        text_file.close()
+
+
 
 def record():
     for race in RACES:
@@ -42,9 +97,9 @@ def record():
             race_results[race][state] = get_race_results(state, race)
             print state, "Complete"
 
-        # text_file = open('Race_Results/statewide_' + race + '_results.txt', 'w')
-        # text_file.write(statewide_data)
-        # text_file.close()
+        text_file = open('Race_Results/statewide_' + race + '_results.txt', 'w')
+        text_file.write(statewide_data)
+        text_file.close()
 
         # text_file = open('Race_Results/local_' + race + '_results.txt', 'w')
         # text_file.write(local_data)
@@ -52,7 +107,7 @@ def record():
 
 def get_race_results(state, race):
     """ For a given 'State' and 'race' returns a dictionary 
-    [STATE][DISTRICT][COUNTY][CANDIDIATE][ATTRIBUTE]: attribute value
+    [STATE][DISTRICT][COUNTY][candidate][ATTRIBUTE]: attribute value
      """
 
     statewide_html = requests.get('http://www.nytimes.com/elections/results/' + \
@@ -63,7 +118,7 @@ def get_race_results(state, race):
 
     # check that this particular race exists at all this election
     if race_div:
-        
+
         #P/S races cover the whole state (no districts)
         #from this conditional, spit out list of race urls. In case os P/S is list of one
         if race == 'president' or race == 'senate':
@@ -104,11 +159,11 @@ def get_race_results(state, race):
                                      ).get_text()
                         district_digits = [char for char in district_header if char.isdigit()]
                         district = "".join(district_digits)
-                        district = int(district)
+                        district = district
             race_results[district] = {}
             candidates_table = race_districtwide_soup.find('table', class_= 'eln-results-table')
             candidate_rows = candidates_table.find_all('tr', class_= 'eln-row')
-            #GET THE CANDIDIATE INFO FOR THAT DISTRICT
+            #GET THE candidate INFO FOR THAT DISTRICT
             race_results[district]['districtwide'] = {}
             for row in candidate_rows:
                 candidate_name = row.find('td', class_= 'eln-name'
@@ -146,10 +201,10 @@ def get_race_results(state, race):
                           ).strip(
                           ).replace(',', '')
 
-                #CREATE SPACE FOR THE BASIC DISTRICTWIDEWIDE ENTRY FOR A CANDIDATE. THIS WILL HAPPEN ONCE PER DISTRICT PER CANDIDIATE
+                #CREATE SPACE FOR THE BASIC DISTRICTWIDEWIDE ENTRY FOR A CANDIDATE. THIS WILL HAPPEN ONCE PER DISTRICT PER candidate
                 race_results[district]['districtwide'][last_name] = {}
 
-                #DEFINE THE BASIC DISTRICTWIDE ENTRY FOR A CANDIDATE. THIS WILL HAPPEN ONCE PER DISTRICT PER CANDIDIATE
+                #DEFINE THE BASIC DISTRICTWIDE ENTRY FOR A CANDIDATE. THIS WILL HAPPEN ONCE PER DISTRICT PER candidate
                 race_results[district]['districtwide'][last_name]['votes'] = votes
                 race_results[district]['districtwide'][last_name]['name'] = candidate_name
                 race_results[district]['districtwide'][last_name]['last'] = last_name
@@ -158,10 +213,9 @@ def get_race_results(state, race):
                 #UNCONTESTED RACES GET DEFINED ON THE STAEWIDE PAGE, SO THIS HAS TO HAPPEN IN THIS LOOP
                 uncontested = row.find('span', class_='eln-uncontested-label')
 
-                if uncontested:
-                    race_results[district]['districtwide'][last_name]['votes'] = "Uncontested Race"
-
-            if race_districtwide_soup.find('table', 'eln-county-table'):
+            if uncontested:
+                race_results[district]['districtwide'][last_name]['votes'] = "Uncontested Race"
+            elif race_districtwide_soup.find('table', 'eln-county-table'):
                 counties_table = race_districtwide_soup.find('table', 'eln-county-table')
                 county_rows = counties_table.find_all('tr', class_='eln-row')
 
@@ -211,12 +265,14 @@ def get_race_results(state, race):
                     race_results[district][county][loser]['votes'] = loser_votes
 
             elif uncontested is not None:
-                race_results[district] = "No county level data from NYT"
+                race_results[district]['all_counties'] = {}
+                race_results[district]['all_counties'][candidate] = "No county level data from NYT"
 
     else:
-        race_results = "No " + race + " race in" + state + "this election"
+        race_results['statewide'] = {}
+        race_results['statewide']['districtwide'] = {}
+        race_results['statewide']['districtwide']['No Race'] = "No " + race + " race in" + state + "this election"
 
-    pprint.pprint(race_results)
     return race_results
 
-record()
+sort_race_results_by_party()
